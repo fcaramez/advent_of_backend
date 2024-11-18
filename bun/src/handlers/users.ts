@@ -148,6 +148,19 @@ export const loginUser = async (c: Context) => {
   }
 };
 
+export const getUser = async (c: Context) => {
+  const user: User = c.get('user');
+
+  return c.json({
+    message: 'User fetched successfully',
+    status: 200,
+    success: true,
+    data: {
+      user,
+    },
+  });
+};
+
 export const updateUser = async (c: Context) => {
   try {
     const user: User = c.get('user');
