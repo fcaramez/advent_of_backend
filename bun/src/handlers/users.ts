@@ -6,38 +6,41 @@ import env from "../env";
 import { User } from "@prisma/client";
 
 const authSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().email("Please provide a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
 });
 
 const updateSchema = z.object({
-  email: z.string().email().optional(),
-  password: z.string().min(8).optional(),
+  email: z.string().email("Please provide a valid email address").optional(),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .optional(),
 });
 
 export const signupUser = async (c: Context) => {
   try {
     const { email, password } = await c.req.json();
 
-    const { success: validBody } = authSchema.safeParse({ email, password });
+    const parsed = authSchema.safeParse({ email, password });
 
-    if (!validBody) {
+    if (!parsed.success) {
       return c.json({
-        message: "All fields are required",
+        message: "Validation failed",
+        errors: parsed.error.errors.map((err) => err.message),
         status: 400,
         success: false,
       });
     }
 
     const userToFind = await db.user.findFirst({
-      where: {
-        email,
-      },
+      where: { email },
     });
 
     if (userToFind) {
       return c.json({
-        message: `User with email ${email} already exists`,
+        message: `An account with email ${email} already exists`,
+        suggestion: "Please try logging in or use a different email address",
         status: 400,
         success: false,
       });
@@ -69,14 +72,17 @@ export const signupUser = async (c: Context) => {
       },
     });
   } catch (error) {
+    console.error("Signup error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
 
     return c.json({
-      message: "Internal server error",
+      message: "Failed to create account",
+      details: errorMessage,
+      suggestion:
+        "Please try again later or contact support if the problem persists",
       status: 500,
       success: false,
-      error: errorMessage,
     });
   }
 };
@@ -85,26 +91,26 @@ export const loginUser = async (c: Context) => {
   try {
     const { email, password } = await c.req.json();
 
-    const { success: validBody } = authSchema.safeParse({ email, password });
+    const parsed = authSchema.safeParse({ email, password });
 
-    if (!validBody) {
+    if (!parsed.success) {
       return c.json({
-        message: "All fields are required",
+        message: "Validation failed",
+        errors: parsed.error.errors.map((err) => err.message),
         status: 400,
         success: false,
       });
     }
 
     const user = await db.user.findFirst({
-      where: {
-        email,
-      },
+      where: { email },
     });
 
     if (!user) {
       return c.json({
-        message: `User with email ${email} does not exist`,
-        status: 400,
+        message: "Authentication failed",
+        suggestion: "Please check your email or sign up for a new account",
+        status: 401,
         success: false,
       });
     }
@@ -113,8 +119,10 @@ export const loginUser = async (c: Context) => {
 
     if (!isPasswordValid) {
       return c.json({
-        message: "Invalid password",
-        status: 400,
+        message: "Authentication failed",
+        suggestion:
+          "Please check your password or use the forgot password feature",
+        status: 401,
         success: false,
       });
     }
@@ -128,7 +136,7 @@ export const loginUser = async (c: Context) => {
     );
 
     return c.json({
-      message: "User logged in successfully",
+      message: `Welcome back, ${user.email}!`,
       status: 200,
       success: true,
       data: {
@@ -136,8 +144,11 @@ export const loginUser = async (c: Context) => {
       },
     });
   } catch (error) {
+    console.error("Login error:", error);
     return c.json({
-      message: "Internal server error",
+      message: "Login failed",
+      suggestion:
+        "Please try again later or contact support if the problem persists",
       status: 500,
       success: false,
     });
@@ -153,7 +164,8 @@ export const updateUser = async (c: Context) => {
 
     if (!parsed.success) {
       return c.json({
-        message: "Invalid input",
+        message: "Validation failed",
+        errors: parsed.error.errors.map((err) => err.message),
         status: 400,
         success: false,
       });
@@ -165,7 +177,9 @@ export const updateUser = async (c: Context) => {
       const isMatch = await Bun.password.verify(password, user.password);
       if (isMatch) {
         return c.json({
-          message: "New password cannot be the same as old password",
+          message: "Password update failed",
+          suggestion:
+            "New password must be different from your current password",
           status: 400,
           success: false,
         });
@@ -203,8 +217,11 @@ export const updateUser = async (c: Context) => {
       },
     });
   } catch (error) {
+    console.error("Update user error:", error);
     return c.json({
-      message: "Internal server error",
+      message: "Failed to update account",
+      suggestion:
+        "Please try again later or contact support if the problem persists",
       status: 500,
       success: false,
     });
