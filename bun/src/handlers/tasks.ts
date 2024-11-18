@@ -6,24 +6,26 @@ import db from '../db';
 const taskSchema = z.object({
   title: z.string().min(5, { message: 'Title must be at least 5 characters long' }),
   description: z.string().optional(),
-  dueDate: z.date().optional(),
+  dueDate: z.string().optional(),
 });
 
 export const createTask = async (c: Context) => {
   try {
     const { id: userId }: User = c.get('user');
 
-    const { title, description, dueDate } = await c.req.json();
+    const body = await c.req.json();
 
-    const parsed = taskSchema.safeParse({ title, description });
+    const parsed = taskSchema.safeParse(body);
 
     if (!parsed.success) {
       return c.json({
         success: false,
-        message: 'Invalid task data',
+        message: 'Please check the task information and try again',
         status: 400,
       });
     }
+
+    const { title, description, dueDate } = parsed.data;
 
     const newTask = await db.task.create({
       data: {
@@ -45,8 +47,7 @@ export const createTask = async (c: Context) => {
   } catch (error) {
     return c.json({
       success: false,
-      message: 'Failed to create task',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
     });
   }
@@ -61,7 +62,7 @@ export const getTaskById = async (c: Context) => {
     if (!userId || !taskId) {
       return c.json({
         success: false,
-        message: 'Invalid query',
+        message: 'Invalid request',
         status: 400,
       });
     }
@@ -69,6 +70,14 @@ export const getTaskById = async (c: Context) => {
     const task = await db.task.findUnique({
       where: { id: taskId, assigneeId: userId },
     });
+
+    if (!task) {
+      return c.json({
+        success: false,
+        message: 'Task not found',
+        status: 404,
+      });
+    }
 
     return c.json({
       success: true,
@@ -81,8 +90,7 @@ export const getTaskById = async (c: Context) => {
   } catch (error) {
     return c.json({
       success: false,
-      message: 'Failed to get task',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
     });
   }
@@ -96,6 +104,14 @@ export const getUserTasks = async (c: Context) => {
       where: { assigneeId: userId },
     });
 
+    if (!tasks.length) {
+      return c.json({
+        success: false,
+        message: 'No tasks found',
+        status: 404,
+      });
+    }
+
     return c.json({
       success: true,
       message: 'Tasks fetched successfully',
@@ -107,8 +123,7 @@ export const getUserTasks = async (c: Context) => {
   } catch (error) {
     return c.json({
       success: false,
-      message: 'Failed to get tasks',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
     });
   }
@@ -125,13 +140,15 @@ export const updateStatus = async (c: Context) => {
     if (!userId || !taskId) {
       return c.json({
         success: false,
-        message: 'Invalid query',
+        message: 'Invalid request',
         status: 400,
       });
     }
 
-    const updatedTask = await db.task.update({
-      where: { id: taskId, assigneeId: userId },
+    await db.task.updateMany({
+      where: {
+        id: taskId,
+      },
       data: { status },
     });
 
@@ -139,15 +156,11 @@ export const updateStatus = async (c: Context) => {
       success: true,
       message: 'Task status updated successfully',
       status: 200,
-      data: {
-        task: updatedTask,
-      },
     });
   } catch (error) {
     return c.json({
       success: false,
-      message: 'Failed to update task status',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
     });
   }
@@ -159,19 +172,24 @@ export const updateTask = async (c: Context) => {
 
     const { id: taskId } = c.req.param();
 
-    const { title, description, dueDate } = await c.req.json();
+    const { title, description, dueDate, status } = await c.req.json<{
+      title: string;
+      description: string;
+      dueDate: string;
+      status: TaskStatus;
+    }>();
 
     if (!userId || !taskId) {
       return c.json({
         success: false,
-        message: 'Invalid query',
+        message: 'Invalid request',
         status: 400,
       });
     }
 
     const updatedTask = await db.task.update({
-      where: { id: taskId, assigneeId: userId },
-      data: { title, description, dueDate },
+      where: { id: taskId },
+      data: { title, description, dueDate, status },
     });
 
     return c.json({
@@ -185,8 +203,39 @@ export const updateTask = async (c: Context) => {
   } catch (error) {
     return c.json({
       success: false,
-      message: 'Failed to update task',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
+      status: 500,
+    });
+  }
+};
+
+export const deleteTask = async (c: Context) => {
+  try {
+    const { id: userId }: User = c.get('user');
+
+    const { id: taskId } = c.req.param();
+
+    if (!userId || !taskId) {
+      return c.json({
+        success: false,
+        message: 'Invalid request',
+        status: 400,
+      });
+    }
+
+    await db.task.delete({
+      where: { id: taskId },
+    });
+
+    return c.json({
+      success: true,
+      message: 'Task deleted successfully',
+      status: 200,
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: 'Something went wrong. Please try again',
       status: 500,
     });
   }

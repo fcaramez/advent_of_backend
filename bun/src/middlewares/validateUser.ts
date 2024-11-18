@@ -7,8 +7,7 @@ export const validateUser = async (c: Context, next: Next) => {
 
   if (!authHeader) {
     return c.json({
-      message: 'Unauthorized',
-      suggestion: 'Please include an Authorization header with your request',
+      message: 'Please log in to continue',
       status: 401,
       success: false,
     });
@@ -18,8 +17,7 @@ export const validateUser = async (c: Context, next: Next) => {
 
   if (!token) {
     return c.json({
-      message: 'Unauthorized',
-      suggestion: 'Please provide a valid Bearer token',
+      message: 'Please log in to continue',
       status: 401,
       success: false,
     });
@@ -30,8 +28,7 @@ export const validateUser = async (c: Context, next: Next) => {
 
     if (!isTokenValid) {
       return c.json({
-        message: 'Invalid or expired token',
-        suggestion: 'Please log in again or sign up for a new account',
+        message: 'Your session has expired. Please log in again',
         status: 401,
         success: false,
       });
@@ -45,8 +42,7 @@ export const validateUser = async (c: Context, next: Next) => {
 
     if (!user) {
       return c.json({
-        message: 'Unauthorized',
-        suggestion: 'Please log in again or sign up for a new account',
+        message: 'Please log in to continue',
         status: 401,
         success: false,
       });
@@ -55,10 +51,8 @@ export const validateUser = async (c: Context, next: Next) => {
     c.set('user', user);
     await next();
   } catch (error) {
-    console.error('Token validation error:', error);
     return c.json({
-      message: 'Authentication failed',
-      suggestion: 'Please try logging in again',
+      message: 'Please log in to continue',
       status: 401,
       success: false,
     });

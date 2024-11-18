@@ -36,8 +36,7 @@ export const signupUser = async (c: Context) => {
 
     if (userToFind) {
       return c.json({
-        message: `An account with email ${email} already exists`,
-        suggestion: 'Please try logging in or use a different email address',
+        message: 'This email is already registered',
         status: 400,
         success: false,
       });
@@ -69,13 +68,8 @@ export const signupUser = async (c: Context) => {
       },
     });
   } catch (error) {
-    console.error('Signup error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
     return c.json({
-      message: 'Failed to create account',
-      details: errorMessage,
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
       success: false,
     });
@@ -103,8 +97,7 @@ export const loginUser = async (c: Context) => {
 
     if (!user) {
       return c.json({
-        message: 'Authentication failed',
-        suggestion: 'Please check your email or sign up for a new account',
+        message: 'Invalid email or password',
         status: 401,
         success: false,
       });
@@ -114,8 +107,7 @@ export const loginUser = async (c: Context) => {
 
     if (!isPasswordValid) {
       return c.json({
-        message: 'Authentication failed',
-        suggestion: 'Please check your password or use the forgot password feature',
+        message: 'Invalid email or password',
         status: 401,
         success: false,
       });
@@ -138,10 +130,8 @@ export const loginUser = async (c: Context) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
     return c.json({
-      message: 'Login failed',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
       success: false,
     });
@@ -183,8 +173,7 @@ export const updateUser = async (c: Context) => {
       const isMatch = await Bun.password.verify(newPassword, user.password);
       if (isMatch) {
         return c.json({
-          message: 'Password update failed',
-          suggestion: 'New password must be different from your current password',
+          message: 'New password must be different from current password',
           status: 400,
           success: false,
         });
@@ -221,10 +210,8 @@ export const updateUser = async (c: Context) => {
       },
     });
   } catch (error) {
-    console.error('Update user error:', error);
     return c.json({
-      message: 'Failed to update account',
-      suggestion: 'Please try again later or contact support if the problem persists',
+      message: 'Something went wrong. Please try again',
       status: 500,
       success: false,
     });
