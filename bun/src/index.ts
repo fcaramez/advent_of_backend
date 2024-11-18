@@ -2,7 +2,7 @@ import { Hono } from "hono";
 
 const app = new Hono({ strict: true });
 
-app.all("/healthz", (c) => {
+app.all("/ping", (c) => {
   return c.json({
     message: "OK",
     status: 200,
@@ -29,5 +29,5 @@ app.onError((err, c) => {
 
 export default {
   fetch: app.fetch,
-  port: Bun.env.PORT || 5005,
+  port: Bun.env.PORT,
 };
