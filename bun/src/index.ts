@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import users from "./routes/users";
 
 const app = new Hono({ strict: true });
 
@@ -26,6 +27,8 @@ app.onError((err, c) => {
     success: false,
   });
 });
+
+app.route("/users", users);
 
 export default {
   fetch: app.fetch,
