@@ -1,21 +1,18 @@
-import { Context } from "hono";
-import db from "../db";
-import { sign } from "hono/jwt";
-import { z } from "zod";
-import env from "../env";
-import { User } from "@prisma/client";
+import { Context } from 'hono';
+import db from '../db';
+import { sign } from 'hono/jwt';
+import { z } from 'zod';
+import env from '../env';
+import { User } from '@prisma/client';
 
 const authSchema = z.object({
-  email: z.string().email("Please provide a valid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters long"),
+  email: z.string().email('Please provide a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters long'),
 });
 
 const updateSchema = z.object({
-  email: z.string().email("Please provide a valid email address").optional(),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters long")
-    .optional(),
+  email: z.string().email('Please provide a valid email address').optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters long').optional(),
 });
 
 export const signupUser = async (c: Context) => {
@@ -26,7 +23,7 @@ export const signupUser = async (c: Context) => {
 
     if (!parsed.success) {
       return c.json({
-        message: "Validation failed",
+        message: 'Validation failed',
         errors: parsed.error.errors.map((err) => err.message),
         status: 400,
         success: false,
@@ -40,7 +37,7 @@ export const signupUser = async (c: Context) => {
     if (userToFind) {
       return c.json({
         message: `An account with email ${email} already exists`,
-        suggestion: "Please try logging in or use a different email address",
+        suggestion: 'Please try logging in or use a different email address',
         status: 400,
         success: false,
       });
@@ -64,7 +61,7 @@ export const signupUser = async (c: Context) => {
     );
 
     return c.json({
-      message: "User created successfully",
+      message: 'User created successfully',
       status: 201,
       success: true,
       data: {
@@ -72,15 +69,13 @@ export const signupUser = async (c: Context) => {
       },
     });
   } catch (error) {
-    console.error("Signup error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    console.error('Signup error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     return c.json({
-      message: "Failed to create account",
+      message: 'Failed to create account',
       details: errorMessage,
-      suggestion:
-        "Please try again later or contact support if the problem persists",
+      suggestion: 'Please try again later or contact support if the problem persists',
       status: 500,
       success: false,
     });
@@ -95,7 +90,7 @@ export const loginUser = async (c: Context) => {
 
     if (!parsed.success) {
       return c.json({
-        message: "Validation failed",
+        message: 'Validation failed',
         errors: parsed.error.errors.map((err) => err.message),
         status: 400,
         success: false,
@@ -108,8 +103,8 @@ export const loginUser = async (c: Context) => {
 
     if (!user) {
       return c.json({
-        message: "Authentication failed",
-        suggestion: "Please check your email or sign up for a new account",
+        message: 'Authentication failed',
+        suggestion: 'Please check your email or sign up for a new account',
         status: 401,
         success: false,
       });
@@ -119,9 +114,8 @@ export const loginUser = async (c: Context) => {
 
     if (!isPasswordValid) {
       return c.json({
-        message: "Authentication failed",
-        suggestion:
-          "Please check your password or use the forgot password feature",
+        message: 'Authentication failed',
+        suggestion: 'Please check your password or use the forgot password feature',
         status: 401,
         success: false,
       });
@@ -144,11 +138,10 @@ export const loginUser = async (c: Context) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error('Login error:', error);
     return c.json({
-      message: "Login failed",
-      suggestion:
-        "Please try again later or contact support if the problem persists",
+      message: 'Login failed',
+      suggestion: 'Please try again later or contact support if the problem persists',
       status: 500,
       success: false,
     });
@@ -157,38 +150,36 @@ export const loginUser = async (c: Context) => {
 
 export const updateUser = async (c: Context) => {
   try {
-    const user: User = c.get("user");
+    const user: User = c.get('user');
     const body = await c.req.json();
 
     const parsed = updateSchema.safeParse(body);
 
     if (!parsed.success) {
       return c.json({
-        message: "Validation failed",
+        message: 'Validation failed',
         errors: parsed.error.errors.map((err) => err.message),
         status: 400,
         success: false,
       });
     }
 
-    const { email, password } = parsed.data;
+    const { email: newEmail, password: newPassword } = parsed.data;
 
-    if (password && user.password) {
-      const isMatch = await Bun.password.verify(password, user.password);
+    if (newPassword && user.password) {
+      const isMatch = await Bun.password.verify(newPassword, user.password);
       if (isMatch) {
         return c.json({
-          message: "Password update failed",
-          suggestion:
-            "New password must be different from your current password",
+          message: 'Password update failed',
+          suggestion: 'New password must be different from your current password',
           status: 400,
           success: false,
         });
       }
     }
 
-    const hashedPassword = password
-      ? await Bun.password.hash(password)
-      : user.password;
+    const hashedPassword = newPassword ? await Bun.password.hash(newPassword) : user.password;
+    const email = newEmail || user.email;
 
     const updatedUser = await db.user.update({
       where: {
@@ -209,7 +200,7 @@ export const updateUser = async (c: Context) => {
     );
 
     return c.json({
-      message: "User updated successfully",
+      message: 'User updated successfully',
       status: 200,
       success: true,
       data: {
@@ -217,11 +208,10 @@ export const updateUser = async (c: Context) => {
       },
     });
   } catch (error) {
-    console.error("Update user error:", error);
+    console.error('Update user error:', error);
     return c.json({
-      message: "Failed to update account",
-      suggestion:
-        "Please try again later or contact support if the problem persists",
+      message: 'Failed to update account',
+      suggestion: 'Please try again later or contact support if the problem persists',
       status: 500,
       success: false,
     });
@@ -230,7 +220,7 @@ export const updateUser = async (c: Context) => {
 
 export const deleteUser = async (c: Context) => {
   try {
-    const user: User = c.get("user");
+    const user: User = c.get('user');
 
     await db.user.delete({
       where: {
@@ -239,13 +229,13 @@ export const deleteUser = async (c: Context) => {
     });
 
     return c.json({
-      message: "User deleted successfully",
+      message: 'User deleted successfully',
       status: 200,
       success: true,
     });
   } catch (error) {
     return c.json({
-      message: "Internal server error",
+      message: 'Internal server error',
       status: 500,
       success: false,
     });
