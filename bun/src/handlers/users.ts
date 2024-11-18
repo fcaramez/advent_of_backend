@@ -212,9 +212,25 @@ export const updateUser = async (c: Context) => {
 };
 
 export const deleteUser = async (c: Context) => {
-  return c.json({
-    message: "User deleted successfully",
-    status: 200,
-    success: true,
-  });
+  try {
+    const user: User = c.get("user");
+
+    await db.user.delete({
+      where: {
+        id: user.id,
+      },
+    });
+
+    return c.json({
+      message: "User deleted successfully",
+      status: 200,
+      success: true,
+    });
+  } catch (error) {
+    return c.json({
+      message: "Internal server error",
+      status: 500,
+      success: false,
+    });
+  }
 };
