@@ -8,7 +8,7 @@ const newProjectSchema = z.object({
   description: z.string().optional(),
 });
 
-export const newProject = async (c: Context) => {
+export const createProject = async (c: Context) => {
   try {
     const body = await c.req.json();
 
@@ -51,7 +51,7 @@ export const newProject = async (c: Context) => {
   }
 };
 
-export const getProject = async (c: Context) => {
+export const getProjectById = async (c: Context) => {
   try {
     const { id } = c.req.param();
 
