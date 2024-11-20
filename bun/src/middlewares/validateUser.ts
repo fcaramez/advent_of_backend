@@ -1,19 +1,10 @@
 import { Context, Next } from 'hono';
 import { validateToken } from '../helpers/validateToken';
 import db from '../db';
+import { extractJWT } from '../helpers/extractJWT';
 
 export const validateUser = async (c: Context, next: Next) => {
-  const authHeader = c.req.header('Authorization');
-
-  if (!authHeader) {
-    return c.json({
-      message: 'Please log in to continue',
-      status: 401,
-      success: false,
-    });
-  }
-
-  const token = authHeader.split(' ')[1];
+  const token = extractJWT(c);
 
   if (!token) {
     return c.json({
